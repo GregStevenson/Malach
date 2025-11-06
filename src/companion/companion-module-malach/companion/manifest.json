@@ -1,0 +1,23 @@
+{
+	"id": "companion-module-malach",
+	"name": "Malach",
+	"label": "Malach",
+	"shortname": "Malach",
+	"version": "0.0.0",
+	"license": "MIT",
+	"repository": "https://github.com/bitfocus/companion-module-companion-module-malach.git",
+	"bugs": "https://github.com/bitfocus/companion-module-companion-module-malach/issues",
+	"maintainers": [],
+	"legacyIds": [],
+	"runtime": {
+		"type": "node22",
+		"api": "nodejs-ipc",
+		"apiVersion": "0.0.0",
+		"entrypoint": "..\\dist\\index.js"
+	},
+	"manufacturer": "!GryFy",
+	"products": ["malach"],
+	"keywords": ["gryfy", "malek", "automation", "local helper"],
+    "description": "Allows Bitfocus Companion to interact with the local computer with the help of a helper application."
+
+}
