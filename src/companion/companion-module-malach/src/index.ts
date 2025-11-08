@@ -21,6 +21,29 @@ class MalachInstance extends InstanceBase<Config> {
     this.setActionDefinitions(this.getActions())
   }
 
+    // --- Add inside class MalachInstance ---
+
+  // Common lists
+  private readonly commonAlphaKeys = 'abcdefghijklmnopqrstuvwxyz'.split('').map((k) => ({ id: k, label: k.toUpperCase() }))
+  private readonly commonSpecialKeys = [
+    'enter','tab','escape','space','backspace','delete',
+    'up','down','left','right','home','end','pageup','pagedown',
+    'f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12',
+  ].map((k) => ({ id: k, label: k }))
+
+  private readonly modifierChoices = [
+    { id: 'ctrl', label: 'Ctrl' },
+    { id: 'shift', label: 'Shift' },
+    { id: 'alt', label: 'Alt' },
+    { id: 'command', label: 'Command/Win' },
+  ]
+
+  // For now: just log the JSON you would send to the server
+  private SendJson(json: string): void {
+    this.log('info', `SendJson: ${json}`)
+  }
+
+
   public getConfigFields(): SomeCompanionConfigField[] {
     return [
       { type: 'textinput', id: 'host', label: 'Host', default: '127.0.0.1', width: 6 },
@@ -45,6 +68,7 @@ class MalachInstance extends InstanceBase<Config> {
 
   private getActions(): CompanionActionDefinitions {
     return {
+      // --- existing actions you already had ---
       launch_notepad: {
         name: 'Malach: Launch Notepad',
         options: [],
@@ -91,8 +115,184 @@ class MalachInstance extends InstanceBase<Config> {
           }
         },
       },
+
+      // --- VicReo-style actions ---
+
+      singleKey: {
+        name: 'VicReo: Single Key (type=press)',
+        options: [
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
+          {
+            type: 'dropdown', id: 'singleKey', label: 'Key',
+            choices: this.commonAlphaKeys, default: 'a',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'singleKeyCustom', label: 'Custom key (e.g. z or f5)',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.singleKeyCustom : o.singleKey) ?? ''
+          const payload = { key, type: 'press', password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      specialKey: {
+        name: 'VicReo: Special Key (type=pressSpecial)',
+        options: [
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom special key', default: false },
+          {
+            type: 'dropdown', id: 'specialKey', label: 'Special key',
+            choices: this.commonSpecialKeys, default: 'enter',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'specialKeyCustom', label: 'Custom special key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.specialKeyCustom : o.specialKey) ?? ''
+          const payload = { key, type: 'pressSpecial', password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      combination: {
+        name: 'VicReo: Combination (type=combination)',
+        options: [
+          { type: 'dropdown', id: 'mod1', label: 'Modifier', choices: this.modifierChoices, default: 'ctrl'},
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false},
+          {
+            type: 'dropdown', id: 'key', label: 'Key',
+            choices: [...this.commonAlphaKeys, ...this.commonSpecialKeys], default: 'c',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'keyCustom', label: 'Custom key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.keyCustom : o.key) ?? ''
+          const modifiers = [o.mod1].filter(Boolean)
+          const payload = { key, type: 'combination', modifiers, password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      trio: {
+        name: 'VicReo: Trio (type=trio)',
+        options: [
+          { type: 'dropdown', id: 'mod1', label: 'Modifier 1', choices: this.modifierChoices, default: 'ctrl' },
+          { type: 'dropdown', id: 'mod2', label: 'Modifier 2', choices: this.modifierChoices, default: 'shift' },
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
+          {
+            type: 'dropdown', id: 'key', label: 'Key',
+            choices: [...this.commonAlphaKeys, ...this.commonSpecialKeys], default: 'a',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'keyCustom', label: 'Custom key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.keyCustom : o.key) ?? ''
+          const modifiers = [o.mod1, o.mod2].filter(Boolean)
+          const payload = { key, type: 'trio', modifiers, password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      quartet: {
+        name: 'VicReo: Quartet (type=quartet)',
+        options: [
+          { type: 'dropdown', id: 'mod1', label: 'Modifier 1', choices: this.modifierChoices, default: 'ctrl' },
+          { type: 'dropdown', id: 'mod2', label: 'Modifier 2', choices: this.modifierChoices, default: 'shift' },
+          { type: 'dropdown', id: 'mod3', label: 'Modifier 3', choices: this.modifierChoices, default: 'alt' },
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
+          {
+            type: 'dropdown', id: 'key', label: 'Key',
+            choices: [...this.commonAlphaKeys, ...this.commonSpecialKeys], default: 'a',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'keyCustom', label: 'Custom key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.keyCustom : o.key) ?? ''
+          const modifiers = [o.mod1, o.mod2, o.mod3].filter(Boolean)
+          const payload = { key, type: 'quartet', modifiers, password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      keyDown: {
+        name: 'VicReo: Key Down (type=down)',
+        options: [
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
+          {
+            type: 'dropdown', id: 'key', label: 'Key',
+            choices: [...this.commonAlphaKeys, ...this.commonSpecialKeys], default: 'a',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'keyCustom', label: 'Custom key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.keyCustom : o.key) ?? ''
+          const payload = { key, type: 'down', password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      keyUp: {
+        name: 'VicReo: Key Up (type=up)',
+        options: [
+          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
+          {
+            type: 'dropdown', id: 'key', label: 'Key',
+            choices: [...this.commonAlphaKeys, ...this.commonSpecialKeys], default: 'a',
+            isVisibleExpression: '$(options:useCustom) == false',
+          },
+          {
+            type: 'textinput', id: 'keyCustom', label: 'Custom key',
+            isVisibleExpression: '$(options:useCustom) == true',
+          },
+        ],
+        callback: (opts) => {
+          const o = opts as any
+          const key = (o.useCustom ? o.keyCustom : o.key) ?? ''
+          const payload = { key, type: 'up', password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
+
+      msg: {
+        name: 'VicReo: Type String (type=string)',
+        options: [{ type: 'textinput', id: 'msg', label: 'Message', default: '' }],
+        callback: (opts) => {
+          const o = opts as any
+          const payload = { type: 'string', msg: String(o.msg ?? ''), password: '' }
+          this.SendJson(JSON.stringify(payload))
+        },
+      },
     }
   }
+
 
   public async destroy(): Promise<void> {
     // cleanup if needed later
