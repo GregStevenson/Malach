@@ -12,24 +12,22 @@ var cfg = builder.Configuration;
 var serverAuthToken = cfg["Server:BearerToken"] ?? "";     // HTTP Authorization: Bearer <token>
 var vicreoPasswordMd5 = cfg["Server:VicreoPasswordMd5"] ?? ""; // Optional: MD5 expected in payload
 
-builder.Services.Configure<JsonOptions>(o =>
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(o =>
 {
     o.SerializerOptions.PropertyNamingPolicy = null; // we use exact property names from VICREO (key, type, modifiers, msg, password)
 });
 builder.Services.AddLogging();
-#if WINDOWS
-builder.Services.AddSingleton<IKeySender, WindowsKeySender>();
-#else
-builder.Services.AddSingleton<IKeySender, NoopKeySender>();
-#endif
-
+if (OperatingSystem.IsWindows())
+    builder.Services.AddSingleton<IKeySender, WindowsKeySender>();
+else
+    builder.Services.AddSingleton<IKeySender, NoopKeySender>();
 var app = builder.Build();
 
 // Simple auth middleware for Bearer token
 app.Use(async (ctx, next) =>
 {
     if (string.IsNullOrWhiteSpace(serverAuthToken))
-        return await next();
+         await next();
 
     var auth = ctx.Request.Headers.Authorization.ToString();
     if (!auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ||
@@ -352,14 +350,6 @@ public static class KeyMap
     {
         if (string.IsNullOrWhiteSpace(token)) return 0;
         token = token.Trim();
-
-        // Alphanumeric (case-insensitive, actual upper will be handled by SHIFT)
-        if (token.Length == 1)
-        {
-            var ch = token[0];
-            if (char.IsLetterOrDigit(ch))
-                return (ushort)System.Windows.Forms.Keys.KeyCode; // placeholder to avoid CS
-        }
 
         // Map well-known names to VK_*
         var t = token.ToLowerInvariant();
