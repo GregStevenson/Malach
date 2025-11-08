@@ -118,27 +118,38 @@ class MalachInstance extends InstanceBase<Config> {
 
       // --- VicReo-style actions ---
 
-      singleKey: {
-        name: 'VicReo: Single Key (type=press)',
-        options: [
-          { type: 'checkbox', id: 'useCustom', label: 'Use custom key', default: false },
-          {
-            type: 'dropdown', id: 'singleKey', label: 'Key',
-            choices: this.commonAlphaKeys, default: 'a',
-            isVisibleExpression: '$(options:useCustom) == false',
-          },
-          {
-            type: 'textinput', id: 'singleKeyCustom', label: 'Custom key (e.g. z or f5)',
-            isVisibleExpression: '$(options:useCustom) == true',
-          },
-        ],
-        callback: (opts) => {
-          const o = opts as any
-          const key = (o.useCustom ? o.singleKeyCustom : o.singleKey) ?? ''
-          const payload = { key, type: 'press', password: '' }
-          this.SendJson(JSON.stringify(payload))
-        },
-      },
+singleKey: {
+  name: 'Single key',
+  options: [
+    {
+      type: 'textinput',
+      id: 'singleKey',
+      label: 'Single key to send',
+      tooltip: 'One alphanumeric character (A–Z, 0–9)',
+      // UI validation: turns the field red unless it matches exactly one alphanumeric char
+      regex: '/^[A-Za-z0–9]$/',
+      required: true,
+      useVariables: false,
+    },
+  ],
+  callback: (opts) => {
+    const raw = String((opts as any)?.options?.singleKey ?? '')
+    const isValid = /^[A-Za-z0–9]$/.test(raw)
+
+    // Preserve user’s case exactly; empty if invalid
+    const key = isValid ? raw : ''
+
+    if (!isValid) {
+      this.log('warn', `Malach: Single key invalid "${raw}" — sending empty key`)
+    } else {
+      this.log('info', `Malach: Single key valid "${raw}"`)
+    }
+
+    const payload = { key, type: 'press', password: '' }
+    this.SendJson(JSON.stringify(payload))
+  },
+},
+
 
       specialKey: {
         name: 'VicReo: Special Key (type=pressSpecial)',
