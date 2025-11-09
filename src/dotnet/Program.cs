@@ -1,34 +1,27 @@
-﻿using Malach.Core;
-using Microsoft.AspNetCore.Mvc;
+﻿// Program.cs
+using Malach.Server.Abstractions;
+using Malach.Server.Platforms.Windows;
+using Malach.Server.Platforms.Mac;
+using Malach.Server.Platforms.Linux;
 
-var builder = WebApplication.CreateBuilder(args);
+if (OperatingSystem.IsWindows()) {
+  builder.Services.AddSingleton<IKeyboard, WindowsKeyboard>();
+  builder.Services.AddSingleton<IMouse, WindowsMouse>();
+  builder.Services.AddSingleton<IWindowManager, WindowsWindowManager>();
+  builder.Services.AddSingleton<IFileActions, WindowsFileActions>();
+}
+else if (OperatingSystem.IsMacOS()) {
+  builder.Services.AddSingleton<IKeyboard, MacKeyboard>();
+  builder.Services.AddSingleton<IMouse, MacMouse>();
+  builder.Services.AddSingleton<IWindowManager, MacWindowManager>();
+  builder.Services.AddSingleton<IFileActions, MacFileActions>();
+}
+else {
+  builder.Services.AddSingleton<IKeyboard, LinuxKeyboard>();
+  builder.Services.AddSingleton<IMouse, LinuxMouse>();
+  builder.Services.AddSingleton<IWindowManager, LinuxWindowManager>();
+  builder.Services.AddSingleton<IFileActions, LinuxFileActions>();
+}
 
-builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
-
-var app = builder.Build();
-
-// Simple bearer token gate (dev default)
-var token = builder.Configuration[""Malach:Token""] ?? ""dev-token"";
-app.Use(async (ctx, next) =>
-{
-    if (!ctx.Request.Headers.TryGetValue(""Authorization"", out var auth) || auth.ToString() != $""Bearer {token}"")
-    { ctx.Response.StatusCode = 401; return; }
-    await next();
-});
-
-app.MapPost(""/v1/launch"", ([FromBody] LaunchReq req, ICommandExecutor exec) =>
-{
-    exec.Launch(req.Exe, req.Args);
-    return Results.Ok(new { ok = true });
-});
-
-app.MapPost(""/v1/open"", ([FromBody] OpenReq req, ICommandExecutor exec) =>
-{
-    exec.Open(req.Path);
-    return Results.Ok(new { ok = true });
-});
-
-app.Run(""http://127.0.0.1:5123"");
-
-record LaunchReq(string Exe, string? Args);
-record OpenReq(string Path);
+// Always cross-platform
+builder.Services.AddSingleton<IUtility, Utility>();
